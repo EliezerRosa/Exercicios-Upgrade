@@ -165,31 +165,35 @@
         let aiWindow = null;
 
         function loadAI(url) {
-            if (url) {
-                const screenWidth = screen.availWidth;
-                const screenHeight = screen.availHeight;
+    if (url) {
+        const screenWidth = screen.availWidth;
+        const screenHeight = screen.availHeight;
 
-                // 4/6 for editor, 2/6 for AI
-                const editorWidth = screenWidth * (4/6);
-                const aiWidth = screenWidth * (2/6);
+        // 4/6 para o editor, 2/6 para a IA
+        const editorWidth = screenWidth * (4 / 6);
+        const aiWidth = screenWidth * (2 / 6);
 
-                // Resize current window for editor
-                window.resizeTo(editorWidth, screenHeight);
-                
-                // Open AI in a new window to the right of the editor
-                aiWindow = window.open(url, "AIWindow", `width=${aiWidth},height=${screenHeight},left=${editorWidth},top=0`);
-                
-                if (!aiWindow) {
-                    alert("Popup blocked! Please allow popups for this website.");
-                } else {
-                    // When AI window is closed, resize editor back to full screen
-                    aiWindow.onunload = function() {
-                        window.resizeTo(screenWidth, screenHeight);
-                        aiWindow = null; // Clear reference
-                    };
-                }
+        // Redimensionar janela do editor
+        window.resizeTo(editorWidth, screenHeight);
+
+        // Evitar comportamento de maximização automática
+        setTimeout(() => {
+            // Abrir a IA em uma nova janela
+            aiWindow = window.open(url, "AIWindow", `width=${aiWidth},height=${screenHeight},left=${editorWidth},top=0`);
+
+            if (!aiWindow) {
+                alert("Popup bloqueado! Permita popups para este site.");
+            } else {
+                // Monitorar fechamento da janela da IA para restaurar tamanho original
+                aiWindow.onunload = function () {
+                    window.resizeTo(screenWidth, screenHeight);
+                    aiWindow = null; // Limpar referência
+                };
             }
-        }
+        }, 500); // Atraso para evitar que o navegador restaure o tamanho original
+    }
+}
+
 
         function openPreviewTab() {
             const htmlCode = document.getElementById('html-code').value;
