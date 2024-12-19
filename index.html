@@ -9,8 +9,6 @@
             margin: 0;
             padding: 0;
             font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
             height: 100vh;
         }
         .top-bar {
@@ -27,6 +25,7 @@
             flex: 1;
             overflow: hidden;
             position: relative;
+            height: calc(100vh - 50px); /* Adjusting for top bar */
         }
         .code-editors {
             display: flex;
@@ -61,9 +60,6 @@
             border-top: 1px solid #ccc;
             background-color: #fff;
         }
-        .ai-container {
-            display: none;
-        }
         .expanded {
             position: absolute;
             width: 66%;
@@ -94,8 +90,7 @@
         <select onchange="loadAI(this.value)">
             <option value="">Select AI</option>
             <option value="https://chat.openai.com">ChatGPT</option>
-            <option value="https://web.whatsapp.com/send?phone=13135550002
-">Meta AI</option>
+            <option value="https://web.whatsapp.com/send?phone=13135550002">Meta AI</option>
             <option value="https://gemini.com">Gemini</option>
             <option value="https://x.com/i/grok">Grok</option>
         </select>
@@ -167,11 +162,32 @@
             }
         }
 
+        let aiWindow = null;
+
         function loadAI(url) {
             if (url) {
-                const newWindow = window.open(url, "AIWindow", "width=600,height=400");
-                if (!newWindow) {
+                // Calculate dimensions based on screen size
+                const screenWidth = window.screen.availWidth;
+                const screenHeight = window.screen.availHeight;
+
+                // Assuming we want 4/6 for editor and 2/6 for AI
+                const editorWidth = screenWidth * (4/6);
+                const aiWidth = screenWidth * (2/6);
+
+                // Open AI in a new window to the right of the editor
+                aiWindow = window.open(url, "AIWindow", `width=${aiWidth},height=${screenHeight},left=${editorWidth},top=0`);
+                
+                // Resize current window to fit editor's proportion
+                window.resizeTo(editorWidth, screenHeight);
+                
+                if (!aiWindow) {
                     alert("Popup blocked! Please allow popups for this website.");
+                } else {
+                    // Close AI window when it's manually closed
+                    aiWindow.onbeforeunload = function() {
+                        window.resizeTo(screenWidth, screenHeight); // Reset to full width
+                        aiWindow = null; // Clear reference
+                    };
                 }
             }
         }
