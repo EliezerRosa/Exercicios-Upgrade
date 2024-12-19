@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Code Editor with AI Integration</title>
+    <title>Ergonomic Code Editor</title>
     <style>
         body {
             margin: 0;
@@ -63,29 +63,27 @@
         }
         .ai-container {
             display: none;
+        }
+        .expanded {
             position: absolute;
-            top: 50px;
-            right: 0;
-            width: 33.33%;
-            height: calc(100% - 50px);
-            background-color: #fff;
-            border-left: 1px solid #ccc;
+            width: 66%;
+            height: calc(66% - 50px);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             z-index: 1000;
-        }
-        .ai-container iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        .vertical-layout .code-editors {
+            background: #f4f4f4;
+            border: 1px solid #ccc;
+            display: flex;
             flex-direction: column;
         }
-        .vertical-layout .editor {
-            border-right: none;
-            border-bottom: 1px solid #ccc;
+        .expanded textarea {
+            flex-grow: 1;
         }
-        .vertical-layout .editor:last-child {
-            border-bottom: none;
+        .buttons {
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-between;
         }
     </style>
 </head>
@@ -93,36 +91,42 @@
     <div class="top-bar">
         <button onclick="reloadExample()">Load Example</button>
         <button onclick="openPreviewTab()">Open Preview in New Tab</button>
-        <select id="ai-selector" onchange="toggleAI(this.value)">
+        <select onchange="loadAI(this.value)">
             <option value="">Select AI</option>
             <option value="https://chat.openai.com">ChatGPT</option>
-            <option value="https://web.whatsapp.com/send?phone=13135550002">Meta AI</option>
+            <option value="https://web.whatsapp.com/send?phone=13135550002
+">Meta AI</option>
             <option value="https://gemini.com">Gemini</option>
             <option value="https://x.com/i/grok">Grok</option>
         </select>
     </div>
 
-    <div class="editor-section" id="editor-section">
+    <div class="editor-section">
         <div class="code-editors">
             <div class="editor" id="html-editor">
                 <h3>HTML</h3>
                 <textarea id="html-code" placeholder="Write your HTML code here"></textarea>
+                <div class="buttons">
+                    <button onclick="expandEditor('html')">Expand</button>
+                </div>
             </div>
             <div class="editor" id="css-editor">
                 <h3>CSS</h3>
                 <textarea id="css-code" placeholder="Write your CSS code here"></textarea>
+                <div class="buttons">
+                    <button onclick="expandEditor('css')">Expand</button>
+                </div>
             </div>
             <div class="editor" id="js-editor">
                 <h3>JavaScript</h3>
                 <textarea id="js-code" placeholder="Write your JavaScript code here"></textarea>
+                <div class="buttons">
+                    <button onclick="expandEditor('js')">Expand</button>
+                </div>
             </div>
         </div>
 
         <div class="preview" id="preview"></div>
-    </div>
-
-    <div class="ai-container" id="ai-container">
-        <iframe id="ai-frame" src=""></iframe>
     </div>
 
     <script>
@@ -152,19 +156,23 @@
             previewFrame.appendChild(script);
         }
 
-        function toggleAI(url) {
-            const aiContainer = document.getElementById('ai-container');
-            const aiFrame = document.getElementById('ai-frame');
-            const editorSection = document.getElementById('editor-section');
-
-            if (aiContainer.style.display === 'none' || aiFrame.src !== url) {
-                aiFrame.src = url;
-                aiContainer.style.display = 'block';
-                editorSection.classList.add('vertical-layout');
+        function expandEditor(type) {
+            const editor = document.getElementById(`${type}-editor`);
+            const textArea = document.getElementById(`${type}-code`);
+            if (editor.classList.contains('expanded')) {
+                editor.classList.remove('expanded');
             } else {
-                aiFrame.src = '';
-                aiContainer.style.display = 'none';
-                editorSection.classList.remove('vertical-layout');
+                document.querySelectorAll('.editor').forEach(el => el.classList.remove('expanded'));
+                editor.classList.add('expanded');
+            }
+        }
+
+        function loadAI(url) {
+            if (url) {
+                const newWindow = window.open(url, "AIWindow", "width=600,height=400");
+                if (!newWindow) {
+                    alert("Popup blocked! Please allow popups for this website.");
+                }
             }
         }
 
