@@ -166,26 +166,25 @@
 
         function loadAI(url) {
             if (url) {
-                // Calculate dimensions based on screen size
-                const screenWidth = window.screen.availWidth;
-                const screenHeight = window.screen.availHeight;
+                const screenWidth = screen.availWidth;
+                const screenHeight = screen.availHeight;
 
-                // Assuming we want 4/6 for editor and 2/6 for AI
+                // 4/6 for editor, 2/6 for AI
                 const editorWidth = screenWidth * (4/6);
                 const aiWidth = screenWidth * (2/6);
 
+                // Resize current window for editor
+                window.resizeTo(editorWidth, screenHeight);
+                
                 // Open AI in a new window to the right of the editor
                 aiWindow = window.open(url, "AIWindow", `width=${aiWidth},height=${screenHeight},left=${editorWidth},top=0`);
-                
-                // Resize current window to fit editor's proportion
-                window.resizeTo(editorWidth, screenHeight);
                 
                 if (!aiWindow) {
                     alert("Popup blocked! Please allow popups for this website.");
                 } else {
-                    // Close AI window when it's manually closed
-                    aiWindow.onbeforeunload = function() {
-                        window.resizeTo(screenWidth, screenHeight); // Reset to full width
+                    // When AI window is closed, resize editor back to full screen
+                    aiWindow.onunload = function() {
+                        window.resizeTo(screenWidth, screenHeight);
                         aiWindow = null; // Clear reference
                     };
                 }
