@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editor de Código - Exercícios Interativos</title>
+    <title>Ergonomic Code Editor</title>
     <style>
         body {
             margin: 0;
             padding: 0;
             font-family: Arial, sans-serif;
             height: 100vh;
-            display: flex;
-            flex-direction: column;
         }
         .top-bar {
             display: flex;
@@ -22,11 +20,12 @@
             border-bottom: 1px solid #ccc;
         }
         .editor-section {
-            flex: 1;
             display: flex;
             flex-direction: column;
+            flex: 1;
             overflow: hidden;
             position: relative;
+            height: calc(100vh - 50px); /* Adjusting for top bar */
         }
         .code-editors {
             display: flex;
@@ -60,6 +59,22 @@
             flex-grow: 1;
             border-top: 1px solid #ccc;
             background-color: #fff;
+        }
+        .expanded {
+            position: absolute;
+            width: 66%;
+            height: calc(66% - 50px);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            background: #f4f4f4;
+            border: 1px solid #ccc;
+            display: flex;
+            flex-direction: column;
+        }
+        .expanded textarea {
+            flex-grow: 1;
         }
         .buttons {
             margin-top: 10px;
@@ -151,20 +166,19 @@
 
         function loadAI(url) {
             if (url) {
-                const screenWidth = window.screen.width;
-                const screenHeight = window.screen.height;
+                const screenWidth = screen.availWidth;
+                const screenHeight = screen.availHeight;
 
-                // Adjust current window to occupy 3/4 of the screen width, positioned on the left
-                window.resizeTo((3 / 4) * screenWidth, screenHeight);
-                window.moveTo(0, 0);
+                // 4/6 for editor, 2/6 for AI
+                const editorWidth = screenWidth * (4/6);
+                const aiWidth = screenWidth * (2/6);
 
-                // Open AI in a new window to occupy 1/4 of the screen width, positioned on the right
-                aiWindow = window.open(
-                    url,
-                    'AIWindow',
-                    `width=${screenWidth / 4},height=${screenHeight},left=${(3 / 4) * screenWidth},top=0`
-                );
-
+                // Resize current window for editor
+                window.resizeTo(editorWidth, screenHeight);
+                
+                // Open AI in a new window to the right of the editor
+                aiWindow = window.open(url, "AIWindow", `width=${aiWidth},height=${screenHeight},left=${editorWidth},top=0`);
+                
                 if (!aiWindow) {
                     alert("Popup blocked! Please allow popups for this website.");
                 } else {
