@@ -166,8 +166,9 @@
 
         function loadAI(url) {
             if (url) {
-                const screenWidth = screen.availWidth;
-                const screenHeight = screen.availHeight;
+                const screenWidth = window.screen.width;
+  	            const screenHeight = window.screen.height;
+
 
                 // 4/6 for editor, 2/6 for AI
                 const editorWidth = screenWidth * (4/6);
