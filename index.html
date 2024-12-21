@@ -23,21 +23,23 @@
             display: flex;
             flex-direction: column;
             flex: 1;
-            overflow: hidden;
+            overflow: visible; /* Muda para visible para permitir que o .expanded apareça sem cortes */
             position: relative;
             height: calc(100vh - 50px); /* Adjusting for top bar */
         }
         .code-editors {
             display: flex;
-            flex: 1;
+            flex: 0 1 auto; /* Ajuste para evitar que cresça além do necessário */
+            max-height: calc(100vh - 50px - [altura do preview]); /* Exemplo */
         }
         .editor {
             flex: 1;
             display: flex;
             flex-direction: column;
             padding: 10px;
-            overflow: auto;
+            overflow: auto; /* Mantém isso para permitir scroll vertical se necessário */
             border-right: 1px solid #ccc;
+            max-width: 100%; /* Garante que não ultrapasse a largura do pai */
         }
         .editor:last-child {
             border-right: none;
@@ -45,15 +47,18 @@
         .editor h3 {
             margin: 0 0 10px;
         }
-        textarea {
+        textarea, .CodeMirror {
             width: 100%;
-            flex-grow: 1;
+            height: auto;
+            max-height: 150px; /* Reduz a altura máxima para caixas não expandidas */
+            overflow-y: auto;
+            overflow-x: hidden; /* Evita a barra de rolagem horizontal */
             font-family: monospace;
             font-size: 14px;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
-            resize: none;
+            box-sizing: border-box; /* Importante para incluir o padding na largura total */
         }
         .preview {
             flex-grow: 1;
@@ -62,19 +67,25 @@
         }
         .expanded {
             position: absolute;
-            width: 66%;
-            height: calc(66% - 50px);
+            width: 80%; /* Ou a largura desejada */
+            height: calc(80% - 50px); /* Ou a altura desejada */
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            z-index: 1000;
+            z-index: 10001;
             background: #f4f4f4;
             border: 1px solid #ccc;
             display: flex;
             flex-direction: column;
+            overflow: hidden; /* Remove qualquer rolagem externa */
         }
-        .expanded textarea {
-            flex-grow: 1;
+        .editor.expanded {
+            overflow: visible; /* Para que o .CodeMirror ou textarea não fique limitado por .editor */
+        }
+        textarea, .expanded .CodeMirror {
+            width: 100%;
+            height: 100%;
+            max-height: none; /* Remove a limitação de altura para expandir totalmente */
         }
         .buttons {
             margin-top: 10px;
@@ -82,6 +93,8 @@
             justify-content: space-between;
         }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/theme/monokai.min.css">
 </head>
 <body>
     <div class="top-bar">
@@ -100,21 +113,21 @@
         <div class="code-editors">
             <div class="editor" id="html-editor">
                 <h3>HTML</h3>
-                <textarea id="html-code" placeholder="Write your HTML code here"></textarea>
+                <textarea id="html-code"></textarea>
                 <div class="buttons">
                     <button onclick="expandEditor('html')">Expand</button>
                 </div>
             </div>
             <div class="editor" id="css-editor">
                 <h3>CSS</h3>
-                <textarea id="css-code" placeholder="Write your CSS code here"></textarea>
+                <textarea id="css-code"></textarea>
                 <div class="buttons">
                     <button onclick="expandEditor('css')">Expand</button>
                 </div>
             </div>
             <div class="editor" id="js-editor">
                 <h3>JavaScript</h3>
-                <textarea id="js-code" placeholder="Write your JavaScript code here"></textarea>
+                <textarea id="js-code"></textarea>
                 <div class="buttons">
                     <button onclick="expandEditor('js')">Expand</button>
                 </div>
@@ -124,22 +137,57 @@
         <div class="preview" id="preview"></div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/addon/selection/active-line.min.js"></script>
     <script>
         const exampleHTML = "<h1>Hello World</h1>";
         const exampleCSS = "h1 { color: blue; text-align: center; }";
         const exampleJS = "console.log('Hello, World!');";
 
+        let htmlEditor, cssEditor, jsEditor;
+
+        function initCodeMirror() {
+            htmlEditor = CodeMirror.fromTextArea(document.getElementById('html-code'), {
+                lineNumbers: true,
+                mode: "htmlmixed",
+                theme: "monokai",
+                matchBrackets: true,
+                styleActiveLine: true,
+                lineWrapping: true // Adiciona quebra de linha automática
+            });
+            cssEditor = CodeMirror.fromTextArea(document.getElementById('css-code'), {
+                lineNumbers: true,
+                mode: "css",
+                theme: "monokai",
+                matchBrackets: true,
+                styleActiveLine: true,
+                lineWrapping: true // Adiciona quebra de linha automática
+            });
+            jsEditor = CodeMirror.fromTextArea(document.getElementById('js-code'), {
+                lineNumbers: true,
+                mode: "javascript",
+                theme: "monokai",
+                matchBrackets: true,
+                styleActiveLine: true,
+                lineWrapping: true // Adiciona quebra de linha automática
+            });
+        }
+
         function reloadExample() {
-            document.getElementById('html-code').value = exampleHTML;
-            document.getElementById('css-code').value = exampleCSS;
-            document.getElementById('js-code').value = exampleJS;
+            htmlEditor.setValue(exampleHTML);
+            cssEditor.setValue(exampleCSS);
+            jsEditor.setValue(exampleJS);
             updatePreview();
         }
 
         function updatePreview() {
-            const htmlCode = document.getElementById('html-code').value;
-            const cssCode = document.getElementById('css-code').value;
-            const jsCode = document.getElementById('js-code').value;
+            const htmlCode = htmlEditor.getValue();
+            const cssCode = cssEditor.getValue();
+            const jsCode = jsEditor.getValue();
 
             const previewFrame = document.getElementById('preview');
             previewFrame.innerHTML = htmlCode;
@@ -153,52 +201,47 @@
 
         function expandEditor(type) {
             const editor = document.getElementById(`${type}-editor`);
-            const textArea = document.getElementById(`${type}-code`);
             if (editor.classList.contains('expanded')) {
                 editor.classList.remove('expanded');
             } else {
                 document.querySelectorAll('.editor').forEach(el => el.classList.remove('expanded'));
                 editor.classList.add('expanded');
+                // Ajuste específico para CodeMirror
+                const codeMirrorInstance = eval(`${type}Editor`);
+                codeMirrorInstance.refresh(); // Isso pode ajudar a redimensionar o CodeMirror
             }
         }
 
         let aiWindow = null;
 
         function loadAI(url) {
-    if (url) {
-        const screenWidth = screen.availWidth;
-        const screenHeight = screen.availHeight;
+            if (url) {
+                const screenWidth = screen.availWidth;
+                const screenHeight = screen.availHeight;
 
-        // 3/4 para o editor, 1/4 para a IA
-        const editorWidth = screenWidth * (3 / 4);
-        const aiWidth = screenWidth * (1 / 4);
+                // 3/4 para o editor, 1/4 para a IA
+                const editorWidth = screenWidth * (3 / 4);
+                const aiWidth = screenWidth * (1 / 4);
 
-        // Redimensionar janela do editor
-        window.resizeTo(editorWidth, screenHeight);
+                // Redimensionar janela do editor
+                window.resizeTo(editorWidth, screenHeight);
 
-        // Evitar comportamento de maximização automática
-        setTimeout(() => {
-            // Abrir a IA em uma nova janela
-            aiWindow = window.open(url, "AIWindow", `width=${aiWidth},height=${screenHeight},left=${editorWidth},top=0`);
+                // Evitar comportamento de maximização automática
+                setTimeout(() => {
+                    // Abrir a IA em uma nova janela
+                    aiWindow = window.open(url, "AIWindow", `width=${aiWidth},height=${screenHeight},left=${editorWidth},top=0`);
 
-            if (!aiWindow) {
-                alert("Popup bloqueado! Permita popups para este site.");
-            } else {
-                // Monitorar fechamento da janela da IA para restaurar tamanho original
-                aiWindow.onunload = function () {
-                    window.resizeTo(screenWidth, screenHeight);
-                    aiWindow = null; // Limpar referência
-                };
+                    if (!aiWindow) {
+                        alert("Popup blocked! Allow popups for this site.");
+                    }
+                }, 500); // Atraso para evitar que o navegador restaure o tamanho original
             }
-        }, 500); // Atraso para evitar que o navegador restaure o tamanho original
-    }
-}
-
+        }
 
         function openPreviewTab() {
-            const htmlCode = document.getElementById('html-code').value;
-            const cssCode = document.getElementById('css-code').value;
-            const jsCode = document.getElementById('js-code').value;
+            const htmlCode = htmlEditor.getValue();
+            const cssCode = cssEditor.getValue();
+            const jsCode = jsEditor.getValue();
 
             const newWindow = window.open();
             newWindow.document.write(`
@@ -218,12 +261,13 @@
             `);
         }
 
-        document.getElementById('html-code').addEventListener('input', updatePreview);
-        document.getElementById('css-code').addEventListener('input', updatePreview);
-        document.getElementById('js-code').addEventListener('input', updatePreview);
-
-        // Initialize example code
-        reloadExample();
+        document.addEventListener('DOMContentLoaded', function() {
+            initCodeMirror();
+            reloadExample();
+            htmlEditor.on('change', updatePreview);
+            cssEditor.on('change', updatePreview);
+            jsEditor.on('change', updatePreview);
+        });
     </script>
 </body>
 </html>
