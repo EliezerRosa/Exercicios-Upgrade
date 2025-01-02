@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,6 +11,7 @@
             font-family: Arial, sans-serif;
             height: 100vh;
         }
+
         .top-bar {
             display: flex;
             justify-content: space-between;
@@ -19,6 +20,7 @@
             background-color: #f4f4f4;
             border-bottom: 1px solid #ccc;
         }
+
         .editor-section {
             display: flex;
             flex-direction: column;
@@ -27,11 +29,13 @@
             position: relative;
             height: calc(100vh - 50px); /* Adjusting for top bar */
         }
+
         .code-editors {
             display: flex;
             flex: 0 1 auto; /* Ajuste para evitar que cresça além do necessário */
             max-height: calc(100vh - 50px - [altura do preview]); /* Exemplo */
         }
+
         .editor {
             flex: 1;
             display: flex;
@@ -41,16 +45,18 @@
             border-right: 1px solid #ccc;
             max-width: 100%; /* Garante que não ultrapasse a largura do pai */
         }
-        .editor:last-child {
-            border-right: none;
-        }
-        .editor h3 {
-            margin: 0 0 10px;
-        }
+
+            .editor:last-child {
+                border-right: none;
+            }
+
+            .editor h3 {
+                margin: 0 0 10px;
+            }
+
         textarea, .CodeMirror {
             width: 100%;
             height: auto;
-            max-height: 150px; /* Reduz a altura máxima para caixas não expandidas */
             overflow-y: auto;
             overflow-x: hidden; /* Evita a barra de rolagem horizontal */
             font-family: monospace;
@@ -60,11 +66,13 @@
             border-radius: 5px;
             box-sizing: border-box; /* Importante para incluir o padding na largura total */
         }
+
         .preview {
             flex-grow: 1;
             border-top: 1px solid #ccc;
             background-color: #fff;
         }
+
         .expanded {
             position: absolute;
             width: 80%; /* Ou a largura desejada */
@@ -79,22 +87,51 @@
             flex-direction: column;
             overflow: hidden; /* Remove qualquer rolagem externa */
         }
+
         .editor.expanded {
             overflow: visible; /* Para que o .CodeMirror ou textarea não fique limitado por .editor */
         }
+
         textarea, .expanded .CodeMirror {
             width: 100%;
             height: 100%;
             max-height: none; /* Remove a limitação de altura para expandir totalmente */
         }
+
         .buttons {
             margin-top: 10px;
             display: flex;
             justify-content: space-between;
         }
+
+        #error-display {
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        /* New CSS for the all-code view */
+        .all-code-editor {
+            position: absolute;
+            width: 80%; /* Ou a largura desejada */
+            height: calc(80% - 50px); /* Ou a altura desejada */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10002; /* Higher than .expanded to appear on top */
+            background: #f4f4f4;
+            border: 1px solid #ccc;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Remove qualquer rolagem externa */
+        }
+
+            .all-code-editor .CodeMirror {
+                width: 100%;
+                height: 100%;
+                max-height: none;
+            }
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/theme/monokai.min.css">
+
 </head>
 <body>
     <div class="top-bar">
@@ -104,20 +141,16 @@
             <option value="">Select AI</option>
             <option value="https://chat.openai.com">ChatGPT</option>
             <option value="https://web.whatsapp.com/send?phone=13135550002">Meta AI</option>
-            <option value="https://gemini.com">Gemini</option>
+            <option value="https://gemini.google.com">Gemini</option>
             <option value="https://x.com/i/grok">Grok</option>
         </select>
+        <!-- New button to expand all code -->
+        <button onclick="expandAllCode()">Expand All Code</button>
     </div>
 
     <div class="editor-section">
         <div class="code-editors">
-            <div class="editor" id="html-editor">
-                <h3>HTML</h3>
-                <textarea id="html-code"></textarea>
-                <div class="buttons">
-                    <button onclick="expandEditor('html')">Expand</button>
-                </div>
-            </div>
+
             <div class="editor" id="css-editor">
                 <h3>CSS</h3>
                 <textarea id="css-code"></textarea>
@@ -125,6 +158,15 @@
                     <button onclick="expandEditor('css')">Expand</button>
                 </div>
             </div>
+
+            <div class="editor" id="html-editor">
+                <h3>HTML</h3>
+                <textarea id="html-code"></textarea>
+                <div class="buttons">
+                    <button onclick="expandEditor('html')">Expand</button>
+                </div>
+            </div>
+
             <div class="editor" id="js-editor">
                 <h3>JavaScript</h3>
                 <textarea id="js-code"></textarea>
@@ -133,27 +175,105 @@
                 </div>
             </div>
         </div>
-
-        <div class="preview" id="preview"></div>
+        <div id="error-display" style="color: red; font-weight: bold; padding: 10px; border: 1px solid red; margin-top: 10px; display: none;"></div>
+        <div class="preview" id="preview">
+            <iframe id="previewFrame" sandbox="allow-scripts allow-same-origin" style="width:100%; height:100%; border:none;"></iframe>
+        </div>
     </div>
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/theme/monokai.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/htmlhint/1.1.3/htmlhint.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/mode/xml/xml.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/mode/css/css.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/mode/javascript/javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/addon/edit/matchbrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/addon/selection/active-line.min.js"></script>
-    <script>
-        const exampleHTML = "<h1>Hello World</h1>";
-        const exampleCSS = "h1 { color: blue; text-align: center; }";
-        const exampleJS = "console.log('Hello, World!');";
 
+    <script>
+        const exampleCSS = `<!DOCTYPE html>
+<html lang="en">
+<head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Code Preview</title>
+<style>
+        body {
+                font-family: Arial, sans-serif;
+                text-align: center;
+                padding: 20px;
+        }
+        input, button {
+            margin: 10px;
+            padding: 10px;
+            width: calc(100% - 40px);
+            max-width: 300px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #resultado {
+            font-size: 1.2em;
+            margin-top: 20px;
+            color: #333;
+        }
+</style>
+
+`;
+
+        const exampleHTML = `</head>
+<body>
+        <div>
+            <h1>Calculadora</h1>
+            <input type="number" id="num1" placeholder="Digite o primeiro número" aria-label="Primeiro número">
+            <input type="number" id="num2" placeholder="Digite o segundo número" aria-label="Segundo número">
+        </div>
+        <div>
+            <button onclick="somar()">Somar</button>
+            <button onclick="limpar()">Limpar</button>
+            <p id="resultado"></p>
+        </div>`;
+
+        const exampleJS = `<script>
+        function somar() {
+            const num1 = parseFloat(document.getElementById('num1').value);
+            const num2 = parseFloat(document.getElementById('num2').value);
+            const resultado = num1 + num2;
+            const campoResultado = document.getElementById('resultado');
+
+            if (isNaN(resultado)) {
+                campoResultado.innerText = 'Insira números válidos.';
+                campoResultado.style.color = 'red';
+            } else {
+                campoResultado.innerText = 'Resultado: ' + resultado;
+                campoResultado.style.color = 'green';
+            }
+        }
+
+        function limpar() {
+            document.getElementById('num1').value = '';
+            document.getElementById('num2').value = '';
+            document.getElementById('resultado').innerText = '';
+        }
+<\/script>
+</body>
+</html>
+`;
         let htmlEditor, cssEditor, jsEditor;
 
         function initCodeMirror() {
             htmlEditor = CodeMirror.fromTextArea(document.getElementById('html-code'), {
                 lineNumbers: true,
-                mode: "htmlmixed",
+                mode: "xml",
                 theme: "monokai",
                 matchBrackets: true,
                 styleActiveLine: true,
@@ -178,27 +298,27 @@
         }
 
         function reloadExample() {
-            htmlEditor.setValue(exampleHTML);
             cssEditor.setValue(exampleCSS);
+            htmlEditor.setValue(exampleHTML);
             jsEditor.setValue(exampleJS);
             updatePreview();
         }
 
         function updatePreview() {
-            const htmlCode = htmlEditor.getValue();
             const cssCode = cssEditor.getValue();
+            const htmlCode = htmlEditor.getValue();
             const jsCode = jsEditor.getValue();
 
-            const previewFrame = document.getElementById('preview');
-            previewFrame.innerHTML = htmlCode;
-            const style = document.createElement('style');
-            style.innerHTML = cssCode;
-            previewFrame.appendChild(style);
-            const script = document.createElement('script');
-            script.innerHTML = jsCode;
-            previewFrame.appendChild(script);
-        }
+            const previewFrame = document.getElementById('previewFrame');
+            const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
 
+            doc.open();
+            doc.write(`${cssCode}
+                        ${htmlCode}
+                        ${jsCode}
+        `);
+            doc.close();
+        }
         function expandEditor(type) {
             const editor = document.getElementById(`${type}-editor`);
             if (editor.classList.contains('expanded')) {
@@ -206,12 +326,12 @@
             } else {
                 document.querySelectorAll('.editor').forEach(el => el.classList.remove('expanded'));
                 editor.classList.add('expanded');
-                // Ajuste específico para CodeMirror
-                const codeMirrorInstance = eval(`${type}Editor`);
-                codeMirrorInstance.refresh(); // Isso pode ajudar a redimensionar o CodeMirror
+                // Ensure CodeMirror instances are refreshed
+                if (type === 'js') jsEditor.refresh();
+                else if (type === 'css') cssEditor.refresh();
+                else if (type === 'html') htmlEditor.refresh();
             }
         }
-
         let aiWindow = null;
 
         function loadAI(url) {
@@ -245,29 +365,103 @@
 
             const newWindow = window.open();
             newWindow.document.write(`
-                <!DOCTYPE html>
-                <html lang="en">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Code Preview</title>
-                    <style>${cssCode}</style>
-                </head>
-                <body>
+                    ${cssCode}
                     ${htmlCode}
-                    <script>${jsCode}<\/script>
-                </body>
-                </html>
-            `);
+                    ${jsCode}
+                `);
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        // Listen for errors from the iframe
+        window.addEventListener('message', function (event) {
+            if (event.data.type === 'error') {
+                document.getElementById('error-display').style.display = 'block';
+                document.getElementById('error-display').innerHTML = '<h2>Error:</h2>' + event.data.message;
+            } else {
+                document.getElementById('error-display').style.display = 'none';
+                document.getElementById('error-display').innerHTML = ''; // Clear old errors
+            }
+        });
+
+
+        // ... (previous JavaScript code remains unchanged)
+
+        // New function for expanding all code
+        function expandAllCode() {
+            const allCodeDiv = document.createElement('div');
+            allCodeDiv.className = 'all-code-editor';
+            document.body.appendChild(allCodeDiv);
+
+            // Combine all code from editors without HTML tags
+            const combinedCode = '/* CSS */\n' + cssEditor.getValue() + '\n\n' +
+                '/* HTML */\n' + htmlEditor.getValue() + '\n\n' +
+                '/* JavaScript */\n' + jsEditor.getValue();
+
+            // Create a new CodeMirror instance for the combined code
+            const allCodeEditor = CodeMirror(allCodeDiv, {
+                value: combinedCode,
+                mode: "htmlmixed",
+                theme: "monokai",
+                lineNumbers: true,
+                matchBrackets: true,
+                styleActiveLine: true,
+                lineWrapping: true,
+                /* readOnly: true // Prevent editing since this is just for viewing */
+            });
+
+            // Close function
+            const closeButton = document.createElement('button');
+            closeButton.textContent = 'Close';
+            closeButton.style.position = 'absolute';
+            closeButton.style.top = '10px';
+            closeButton.style.right = '10px';
+            closeButton.onclick = function () {
+                document.body.removeChild(allCodeDiv);
+            };
+            allCodeDiv.appendChild(closeButton);
+        }
+
+        // Add EventListener to update the all code view when any editor changes
+        document.addEventListener('DOMContentLoaded', function () {
+            // Existing initialization
             initCodeMirror();
             reloadExample();
-            htmlEditor.on('change', updatePreview);
-            cssEditor.on('change', updatePreview);
-            jsEditor.on('change', updatePreview);
+
+            // Listen for changes in any editor to update the preview and potentially the all-code view
+            htmlEditor.on('change', function () {
+                document.getElementById('error-display').style.display = 'none';
+                document.getElementById('error-display').innerHTML = ''; // Clear old errors before update
+                updatePreview();
+                // Check if the all-code view is open (you might need to keep track of this)
+                // If open, update it:
+                if (document.querySelector('.all-code-editor')) {
+                    expandAllCode();
+                }
+            });
+            cssEditor.on('change', function () {
+                updatePreview();
+                if (document.querySelector('.all-code-editor')) {
+                    expandAllCode();
+                }
+            });
+            jsEditor.on('change', function () {
+                updatePreview();
+                if (document.querySelector('.all-code-editor')) {
+                    expandAllCode();
+                }
+            });
         });
+
+        // Existing error handling for iframe messages
+        window.addEventListener('message', function (event) {
+            if (event.data.type === 'error') {
+                document.getElementById('error-display').style.display = 'block';
+                document.getElementById('error-display').innerHTML = '<h2>Error:</h2>' + event.data.message;
+            } else {
+                document.getElementById('error-display').style.display = 'none';
+                document.getElementById('error-display').innerHTML = ''; // Clear old errors
+            }
+        });
+
     </script>
 </body>
 </html>
