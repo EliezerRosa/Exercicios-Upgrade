@@ -135,17 +135,35 @@
 </head>
 <body>
     <div class="top-bar">
-        <button onclick="reloadExample()">Load Example</button>
-        <button onclick="openPreviewTab()">Open Preview in New Tab</button>
+        <button onclick="reloadExample()">Carregar Exemplo</button>
+        <button onclick="openPreviewTab()">Ver App em Nova Aba</button>
+        <!-- New button to expand all code -->
+        <button onclick="expandAllCode()">Ver Todo o Código</button>
         <select onchange="loadAI(this.value)">
-            <option value="">Select AI</option>
+            <option value="">Escolha a IA</option>
             <option value="https://chat.openai.com">ChatGPT</option>
             <option value="https://web.whatsapp.com/send?phone=13135550002">Meta AI</option>
             <option value="https://gemini.google.com">Gemini</option>
+            <option value="https://aistudio.google.com">Google AI Studio</option>
             <option value="https://x.com/i/grok">Grok</option>
         </select>
-        <!-- New button to expand all code -->
-        <button onclick="expandAllCode()">Expand All Code</button>
+
+	<select onchange="loadCourse(this.value)">
+
+            <option value="">Escolha um Curso</option>
+            <option value="https://pt.khanacademy.org/computing/computer-programming/programming/intro-to-programming/v/programming-intro">Khan Academy Português</option>
+            <option value="https://www.cursoemvideo.com/">Professor Guanabara Português</option>
+            <option value="https://www.primecursos.com.br/programacao/
+">Prime Cursos Português</option>
+
+            <option value="https://www.udemy.com/course/programacao-para-iniciantes-aprenda-programar-do-zero/?utm_source=adwords&utm_medium=udemyads&utm_campaign=MX_FF-CONV_BR_Search-NB_DSA_GammaCatchall_la.PT_Google&campaigntype=Search&portfolio=Brazil&language=PT&product=Course&test=&audience=DSA&topic=&priority=Gamma&funnel=Conversion&utm_content=&utm_term=_._ag_171903008064_._ad_706479958704_._kw__._de_c_._dm__._pl__._ti_dsa-1456167871416_._li_9101057_._pd__._&matchtype=&gad_source=1&gclid=CjwKCAiA1eO7BhATEiwAm0Ee-ArmsHzCdgbf1JW5EWhOCPf78MztvJdQ6Az4pHt7BEo0Vxp7tz_uoRoCeHUQAvD_BwE">Udemy Português</option>
+            <option value="https://www.edx.org/learn/how-to-learn/edx-how-to-learn-online">edX Inglês</option>
+            <option value="https://www.codecademy.com/learn">Codecademy Inglês</option>
+            <option value="https://www.w3schools.com/">w3schools Inglês</option>
+            <option value="https://www.sololearn.com/pt/onboarding">sololearn Português</option>
+
+         
+        </select>
     </div>
 
     <div class="editor-section">
@@ -155,7 +173,7 @@
                 <h3>CSS</h3>
                 <textarea id="css-code"></textarea>
                 <div class="buttons">
-                    <button onclick="expandEditor('css')">Expand</button>
+                    <button onclick="expandEditor('css')">Expandir/Recolher</button>
                 </div>
             </div>
 
@@ -163,7 +181,7 @@
                 <h3>HTML</h3>
                 <textarea id="html-code"></textarea>
                 <div class="buttons">
-                    <button onclick="expandEditor('html')">Expand</button>
+                    <button onclick="expandEditor('html')">Expandir/Recolher</button>
                 </div>
             </div>
 
@@ -171,7 +189,7 @@
                 <h3>JavaScript</h3>
                 <textarea id="js-code"></textarea>
                 <div class="buttons">
-                    <button onclick="expandEditor('js')">Expand</button>
+                    <button onclick="expandEditor('js')">Expandir/Recolher</button>
                 </div>
             </div>
         </div>
@@ -296,6 +314,8 @@
                 lineWrapping: true // Adiciona quebra de linha automática
             });
         }
+            initCodeMirror();
+            reloadExample();
 
         function reloadExample() {
             cssEditor.setValue(exampleCSS);
@@ -410,7 +430,7 @@
 
             // Close function
             const closeButton = document.createElement('button');
-            closeButton.textContent = 'Close';
+            closeButton.textContent = 'Fechar';
             closeButton.style.position = 'absolute';
             closeButton.style.top = '10px';
             closeButton.style.right = '10px';
@@ -420,10 +440,35 @@
             allCodeDiv.appendChild(closeButton);
         }
 
+       let courseWindow = null;
+
+        function loadCourse(url) {
+            if (url) {
+                const screenWidth = screen.availWidth;
+                const screenHeight = screen.availHeight;
+
+                // 3/4 para o editor, 1/4 para o Curso
+                const editorWidth = screenWidth * (3 / 4);
+                const aiWidth = screenWidth * (1 / 4);
+
+                // Redimensionar janela do editor
+                window.resizeTo(editorWidth, screenHeight);
+
+                // Evitar comportamento de maximização automática
+                setTimeout(() => {
+                    // Abrir a IA em uma nova janela
+                    aiWindow = window.open(url, "AIWindow", `width=${aiWidth},height=${screenHeight},left=${editorWidth},top=0`);
+
+                    if (!aiWindow) {
+                        alert("Popup blocked! Allow popups for this site.");
+                    }
+                }, 500); // Atraso para evitar que o navegador restaure o tamanho original
+            }
+        }
+
         // Add EventListener to update the all code view when any editor changes
         document.addEventListener('DOMContentLoaded', function () {
-            // Existing initialization
-            initCodeMirror();
+
             reloadExample();
 
             // Listen for changes in any editor to update the preview and potentially the all-code view
