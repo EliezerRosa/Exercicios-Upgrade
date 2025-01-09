@@ -495,10 +495,10 @@
                 cssEditor.setValue(examples[index].css);
                 htmlEditor.setValue(examples[index].html);
                 jsEditor.setValue(examples[index].js);
-                updatePreview();
+                 updatePreview();
             }
         }
-        async function loadHTMLHint() {
+         async function loadHTMLHint() {
             return new Promise(resolve => {
             const htmlHintScript = document.createElement('script');
             htmlHintScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/htmlhint/1.1.3/htmlhint.min.js';
@@ -527,13 +527,12 @@
             doc.body.appendChild(script);
 
             doc.close();
-             if (typeof HTMLHint !== 'undefined') {
+            if (typeof HTMLHint !== 'undefined') {
                 validateCode();
             } else {
                 console.error("HTMLHint não está definido. Verifique se a biblioteca foi carregada corretamente.");
             }
         }
-
       function expandEditor(type) {
             const editor = document.getElementById(`${type}-editor`);
             if (editor.classList.contains('expanded')) {
@@ -730,7 +729,7 @@
 			// Listen for changes in any editor to update the preview and potentially the all-code view
             htmlEditor.on('change', function() {
                  updatePreview();
-                  if (document.querySelector('.all-code-editor')) {
+                 if (document.querySelector('.all-code-editor')) {
                      // Verificar se o editor de todo o código está aberto
                      const previewFrame = document.getElementById('previewFrame');
                       const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
@@ -742,8 +741,8 @@
             });
              cssEditor.on('change', function() {
                 updatePreview();
-                if (document.querySelector('.all-code-editor')) {
-                    const previewFrame = document.getElementById('previewFrame');
+                 if (document.querySelector('.all-code-editor')) {
+                      const previewFrame = document.getElementById('previewFrame');
                       const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
                       if(doc.querySelector('.all-code-editor')){
 						 expandAllCode();
@@ -755,7 +754,7 @@
                   if (document.querySelector('.all-code-editor')) {
                      const previewFrame = document.getElementById('previewFrame');
                       const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
-                      if(doc.querySelector('.all-code-editor')){
+                     if(doc.querySelector('.all-code-editor')){
 						 expandAllCode();
 					 }
                 }
