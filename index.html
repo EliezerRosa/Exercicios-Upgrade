@@ -3,290 +3,679 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ergonomic Code Editor</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            height: 100vh;
-        }
+    <title>Aprenda Fazendo - Editor de Código</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/theme/monokai.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+<style>
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Arial', sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #f0f0f0;
+}
 
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            background-color: #f4f4f4;
-            border-bottom: 1px solid #ccc;
-        }
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #333;
+    color: white;
+}
 
-        .editor-section {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            overflow: visible; /* Muda para visible para permitir que o .expanded apareça sem cortes */
-            position: relative;
-            height: calc(100vh - 50px); /* Adjusting for top bar */
-        }
+.top-bar button, .top-bar select {
+    background-color: #555;
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 5px;
+}
 
-        .code-editors {
-            display: flex;
-            flex: 0 1 auto; /* Ajuste para evitar que cresça além do necessário */
-            max-height: calc(100vh - 50px - [altura do preview]); /* Exemplo */
-        }
+.top-bar button:hover, .top-bar select:hover {
+    background-color: #777;
+}
 
-        .editor {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            padding: 10px;
-            overflow: auto; /* Mantém isso para permitir scroll vertical se necessário */
-            border-right: 1px solid #ccc;
-            max-width: 100%; /* Garante que não ultrapasse a largura do pai */
-        }
+.editor-section {
+    display: flex;
+    flex-grow: 1;
+    overflow: hidden;
+}
 
-            .editor:last-child {
-                border-right: none;
-            }
+.code-editors {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    max-width: calc(100vw - 400px);
+    border-right: 1px solid #ccc;
+    overflow-y: auto;
+}
 
-            .editor h3 {
-                margin: 0 0 10px;
-            }
+.editor {
+    flex: 1;
+    padding: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid #ccc;
+}
 
-        textarea, .CodeMirror {
-            width: 100%;
-            height: auto;
-            overflow-y: auto;
-            overflow-x: hidden; /* Evita a barra de rolagem horizontal */
-            font-family: monospace;
-            font-size: 14px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box; /* Importante para incluir o padding na largura total */
-        }
+.editor h3 {
+    margin: 0 0 10px;
+    color: #333;
+    margin-right: 10px;
+}
 
-        .preview {
-            flex-grow: 1;
-            border-top: 1px solid #ccc;
-            background-color: #fff;
-        }
+.CodeMirror {
+    height: auto !important;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+    flex-grow: 1;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
 
-        .expanded {
-            position: absolute;
-            width: 80%; /* Ou a largura desejada */
-            height: calc(80% - 50px); /* Ou a altura desejada */
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 10001;
-            background: #f4f4f4;
-            border: 1px solid #ccc;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden; /* Remove qualquer rolagem externa */
-        }
+.editor.expanded {
+    position: absolute;
+    width: 80%;
+    height: 80%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1001;
+    background: #f4f4f4;
+    border: 1px solid #ccc;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
 
-        .editor.expanded {
-            overflow: visible; /* Para que o .CodeMirror ou textarea não fique limitado por .editor */
-        }
+.editor.expanded .CodeMirror {
+    height: 100% !important;
+}
 
-        textarea, .expanded .CodeMirror {
-            width: 100%;
-            height: 100%;
-            max-height: none; /* Remove a limitação de altura para expandir totalmente */
-        }
+.preview {
+    flex-basis: 400px;
+    flex-grow: 1;
+    border-left: 1px solid #ccc;
+    overflow: hidden;
+    background-color: white;
+}
 
-        .buttons {
-            margin-top: 10px;
-            display: flex;
-            justify-content: space-between;
-        }
+#previewFrame {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
 
-        #error-display {
-            max-height: 100px;
-            overflow-y: auto;
-        }
+.editor > div:first-child {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
 
-        /* New CSS for the all-code view */
-        .all-code-editor {
-            position: absolute;
-            width: 80%; /* Ou a largura desejada */
-            height: calc(80% - 50px); /* Ou a altura desejada */
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 10002; /* Higher than .expanded to appear on top */
-            background: #f4f4f4;
-            border: 1px solid #ccc;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden; /* Remove qualquer rolagem externa */
-        }
+.buttons {
+    margin-top: 0px;
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 0px;
+}
 
-            .all-code-editor .CodeMirror {
-                width: 100%;
-                height: 100%;
-                max-height: none;
-            }
-    </style>
+.buttons button {
+    background-color: #555;
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 5px;
+}
 
+.buttons button:hover {
+    background-color: #777;
+}
+
+.top-bar {
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    background-color: #333;
+    align-items: center;
+}
+
+.icon-button, .icon-dropdown {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    background-color: #555;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.icon-button:hover, .icon-dropdown:hover {
+    background-color: #777;
+}
+
+.icon-button .tooltip, .icon-dropdown .tooltip {
+    position: absolute;
+    left: 40px;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    font-size: 12px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    opacity: 0;
+    pointer-events: none;
+    white-space: nowrap;
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: 999;
+}
+
+.icon-button:hover .tooltip, .icon-dropdown:hover .tooltip {
+    opacity: 1;
+    transform: translateY(-50%) translateX(10px);
+}
+
+.icon-button.download:hover .tooltip {
+    left: auto;
+    right: 60px;
+    transform: translateY(-50%) translateX(-10px);
+}
+
+.icon-dropdown select {
+    appearance: none;
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.icon-dropdown option[value=""] {
+    display: none;
+}
+
+.top-bar select:focus {
+    outline: none;
+}
+
+#error-display {
+    max-height: 100px;
+    overflow-y: auto;
+    color: red;
+    font-weight: bold;
+    padding: 10px;
+    border: 1px solid red;
+    margin-top: 10px;
+    display: none;
+    background-color: #fdd;
+}
+
+/* Style for the new all-code-editor container */
+.all-code-editor {
+    position: absolute;
+    width: 90%;  /*Increase width for better visualization*/
+    height: 90%; /* Increase height for more vertical space */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1002;
+    background: #f4f4f4;
+    border: 1px solid #ccc;
+    display: flex;
+    overflow: hidden;
+    flex-direction: row; /*Keep the row for side-by-side columns*/
+}
+
+.all-code-editor.hidden {
+    display: none;
+}
+
+.all-code-editor .code-editor {
+    flex: 1;
+    padding: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid #ccc;
+     box-sizing: border-box;
+}
+
+.all-code-editor .code-editor h3{
+    margin: 0 0 10px;
+    color: #333;
+    margin-right: 10px;
+}
+
+.all-code-editor .CodeMirror {
+    height: auto !important;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+    flex-grow: 1;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.all-code-editor button {
+    background-color: #555;
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    align-self: flex-end;
+    margin-top: 10px;
+    margin-right: 10px;
+}
+
+.all-code-editor button:hover{
+    background-color: #777;
+}
+.all-code-editor .code-editor .CodeMirror {
+       font-size: 12px;
+  }
+
+
+@media (max-width: 768px) {
+    .editor-section {
+        flex-direction: column;
+    }
+    .code-editors {
+        max-width: 100%;
+        border-right: none;
+    }
+    .preview {
+        flex-basis: auto;
+        border-left: none;
+    }
+}
+</style>
 </head>
 <body>
-    <div class="top-bar">
-        <button onclick="reloadExample()">Carregar Exemplo</button>
-        <button onclick="openPreviewTab()">Ver App em Nova Aba</button>
-        <!-- New button to expand all code -->
-        <button onclick="expandAllCode()">Ver Todo o Código</button>
-        <select onchange="loadAI(this.value)">
-            <option value="">Escolha a IA</option>
-            <option value="https://chat.openai.com">ChatGPT</option>
-            <option value="https://web.whatsapp.com/send?phone=13135550002">Meta AI</option>
-            <option value="https://gemini.google.com">Gemini</option>
-            <option value="https://aistudio.google.com">Google AI Studio</option>
-            <option value="https://x.com/i/grok">Grok</option>
-        </select>
+  <div class="top-bar">
+        <!-- Dropdown de exemplo -->
+        <div class="icon-dropdown">
+            <i class="fas fa-file-code"></i>
+            <select data-tooltip="Escolha um exemplo para carregar" onchange="loadExample(this.value)">
+                <option value="" disabled selected hidden></option>
+                <option value="0">Calculadora</option>
+                <option value="1">Cronômetro</option>
+                <option value="2">Foto de Pet's</option>
+            </select>
+            <span class="tooltip">Código Exemplo</span>
+        </div>
 
-	<select onchange="loadCourse(this.value)">
 
-            <option value="">Escolha um Curso</option>
-            <option value="https://pt.khanacademy.org/computing/computer-programming/programming/intro-to-programming/v/programming-intro">Khan Academy Português</option>
-            <option value="https://www.cursoemvideo.com/">Professor Guanabara Português</option>
-            <option value="https://www.primecursos.com.br/programacao/
-">Prime Cursos Português</option>
+        <!-- Botões com ícones -->
+        <button class="icon-button" onclick="openPreviewTab()">
+            <i class="fas fa-external-link-alt"></i>
+            <span class="tooltip">Abrir em Nova Aba</span>
+        </button>
+        <button class="icon-button" onclick="expandAllCode()">
+            <i class="fas fa-code"></i>
+            <span class="tooltip">Ver Todo o Código</span>
+        </button>
 
-            <option value="https://www.udemy.com/course/programacao-para-iniciantes-aprenda-programar-do-zero/?utm_source=adwords&utm_medium=udemyads&utm_campaign=MX_FF-CONV_BR_Search-NB_DSA_GammaCatchall_la.PT_Google&campaigntype=Search&portfolio=Brazil&language=PT&product=Course&test=&audience=DSA&topic=&priority=Gamma&funnel=Conversion&utm_content=&utm_term=_._ag_171903008064_._ad_706479958704_._kw__._de_c_._dm__._pl__._ti_dsa-1456167871416_._li_9101057_._pd__._&matchtype=&gad_source=1&gclid=CjwKCAiA1eO7BhATEiwAm0Ee-ArmsHzCdgbf1JW5EWhOCPf78MztvJdQ6Az4pHt7BEo0Vxp7tz_uoRoCeHUQAvD_BwE">Udemy Português</option>
-            <option value="https://www.edx.org/learn/how-to-learn/edx-how-to-learn-online">edX Inglês</option>
-            <option value="https://www.codecademy.com/learn">Codecademy Inglês</option>
-            <option value="https://www.w3schools.com/">w3schools Inglês</option>
-            <option value="https://www.sololearn.com/pt/onboarding">sololearn Português</option>
+        <!-- Dropdown de IA Tutor -->
+        <div class="icon-dropdown">
+            <i class="fas fa-robot"></i>
+            <select data-tooltip="Escolha uma IA Tutor" onchange="loadAI(this.value)">
+                <option value="" disabled selected hidden></option>
+                <option value="https://chat.openai.com">ChatGPT</option>
+                <option value="https://web.whatsapp.com/send?phone=13135550002">Meta AI</option>
+                <option value="https://gemini.google.com">Gemini</option>
+                <option value="https://aistudio.google.com">Google AI Studio</option>
+                <option value="https://x.com/i/grok">Grok</option>
+            </select>
+            <span class="tooltip">Escolha IA Tutor</span>
+        </div>
 
-         
-        </select>
+        <!-- Dropdown de cursos -->
+        <div class="icon-dropdown">
+            <i class="fas fa-graduation-cap"></i>
+            <select data-tooltip="Escolha um curso de programação" onchange="loadCourse(this.value)">
+                <option value="" disabled selected hidden></option>
+                <option value="https://pt.khanacademy.org/computing/computer-programming/programming/intro-to-programming/v/programming-intro">Khan Academy Português</option>
+                <option value="https://www.cursoemvideo.com/">Professor Guanabara Português</option>
+                <option value="https://www.primecursos.com.br/programacao/">Prime Cursos Português</option>
+                <option value="https://www.udemy.com/course/programacao-para-iniciantes-aprenda-programar-do-zero/">Udemy Português</option>
+                <option value="https://www.edx.org/learn/how-to-learn/edx-how-to-learn-online">edX Inglês</option>
+                <option value="https://www.codecademy.com/learn">Codecademy Inglês</option>
+                <option value="https://www.w3schools.com/">w3schools Inglês</option>
+                <option value="https://www.sololearn.com/pt/onboarding">sololearn Português</option>
+            </select>
+            <span class="tooltip">Escolha Curso Programação</span>
+        </div>
+
+
+        <button class="icon-button" onclick="saveCode()">
+            <i class="fas fa-save"></i>
+            <span class="tooltip">Salvar</span>
+        </button>
+        <button class="icon-button" onclick="loadCode()">
+            <i class="fas fa-upload"></i>
+            <span class="tooltip">Importar</span>
+        </button>
+        <button class="icon-button download" onclick="exportCode()">
+            <i class="fas fa-download"></i>
+            <span class="tooltip">Exportar</span>
+        </button>
     </div>
 
     <div class="editor-section">
         <div class="code-editors">
-
             <div class="editor" id="css-editor">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
                 <h3>CSS</h3>
-                <textarea id="css-code"></textarea>
                 <div class="buttons">
-                    <button onclick="expandEditor('css')">Expandir/Recolher</button>
+					<button onclick="expandEditor('css')">Expandir/Recolher</button>
+				</div>
                 </div>
+                 <textarea id="css-code"></textarea>
             </div>
-
             <div class="editor" id="html-editor">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
                 <h3>HTML</h3>
+                <div class="buttons">
+					 <button onclick="expandEditor('html')">Expandir/Recolher</button>
+				</div>
+                </div>
                 <textarea id="html-code"></textarea>
-                <div class="buttons">
-                    <button onclick="expandEditor('html')">Expandir/Recolher</button>
-                </div>
             </div>
-
             <div class="editor" id="js-editor">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
                 <h3>JavaScript</h3>
-                <textarea id="js-code"></textarea>
-                <div class="buttons">
-                    <button onclick="expandEditor('js')">Expandir/Recolher</button>
+				 <div class="buttons">
+					<button onclick="expandEditor('js')">Expandir/Recolher</button>
+				</div>
                 </div>
+                <textarea id="js-code"></textarea>
             </div>
         </div>
-        <div id="error-display" style="color: red; font-weight: bold; padding: 10px; border: 1px solid red; margin-top: 10px; display: none;"></div>
-        <div class="preview" id="preview">
+       <div class="preview" id="preview">
             <iframe id="previewFrame" sandbox="allow-scripts allow-same-origin" style="width:100%; height:100%; border:none;"></iframe>
         </div>
     </div>
+  <div class="all-code-editor" id="all-code-editor">
+       <div class="code-editor" id="all-css-editor">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <h3>CSS</h3>
+                <div>
+                    <button onclick="adjustFontSize('all-css-editor', -1)">-</button>
+                    <button onclick="adjustFontSize('all-css-editor', 1)">+</button>
+                </div>
+            </div>
+            <textarea id="all-css-code"></textarea>
+        </div>
+        <div class="code-editor" id="all-html-editor">
+             <div style="display: flex; align-items: center; justify-content: space-between;">
+               <h3>HTML</h3>
+              <div>
+                 <button onclick="adjustFontSize('all-html-editor', -1)">-</button>
+                 <button onclick="adjustFontSize('all-html-editor', 1)">+</button>
+             </div>
+          </div>
+         <textarea id="all-html-code"></textarea>
+        </div>
+         <div class="code-editor" id="all-js-editor">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <h3>JavaScript</h3>
+             <div>
+              <button onclick="adjustFontSize('all-js-editor', -1)">-</button>
+              <button onclick="adjustFontSize('all-js-editor', 1)">+</button>
+	      <button onclick="expandAllCode()">Fechar</button>
+            </div>
+         </div>
+          <textarea id="all-js-code"></textarea>
+       </div>
+    </div>	 
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/theme/monokai.min.css">
+ <div id="error-display"></div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/htmlhint/1.1.3/htmlhint.min.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/mode/xml/xml.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/mode/css/css.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/mode/javascript/javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/addon/edit/matchbrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.52.2/addon/selection/active-line.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jshint/2.13.6/jshint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/htmlhint/1.1.3/htmlhint.min.js"></script>
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.7/beautify-html.min.js" integrity="sha512-H3f90E1576+v9gI4Q3xT6v1zV6/V1G622n12gqE5+399eI4Rk97vG4Kz0mQG7yO6Lq+qWv6I8fNf3i7uQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
 
     <script>
-        const exampleCSS = `<!DOCTYPE html>
-<html lang="en">
-<head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Code Preview</title>
-<style>
-        body {
-                font-family: Arial, sans-serif;
-                text-align: center;
-                padding: 20px;
-        }
-        input, button {
-            margin: 10px;
-            padding: 10px;
-            width: calc(100% - 40px);
-            max-width: 300px;
-        }
-        button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        #resultado {
-            font-size: 1.2em;
-            margin-top: 20px;
-            color: #333;
-        }
-</style>
 
-`;
+       const examples = [
+            {
+                css: `body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+                        input, button { margin: 10px; padding: 10px; width: calc(100% - 40px); max-width: 300px; }
+                        button { background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+                        button:hover { background-color: #0056b3; }
+                        #resultado { font-size: 1.2em; margin-top: 20px; color: #333; }`,
+                html: `<div> <h1>Calculadora</h1>
+                        <input type="number" id="num1" placeholder="Digite o primeiro número" aria-label="Primeiro número">
+                        <input type="number" id="num2" placeholder="Digite o segundo número" aria-label="Segundo número">
+                    </div>
+                    <div>
+                        <button onclick="somar()">Somar</button>
+                        <button onclick="limpar()">Limpar</button>
+                        <p id="resultado"></p>
+                    </div>`,
+                js: `function somar() {
+                        const num1 = parseFloat(document.getElementById('num1').value);
+                        const num2 = parseFloat(document.getElementById('num2').value);
+                        const resultado = num1 + num2;
+                        const campoResultado = document.getElementById('resultado');
 
-        const exampleHTML = `</head>
-<body>
-        <div>
-            <h1>Calculadora</h1>
-            <input type="number" id="num1" placeholder="Digite o primeiro número" aria-label="Primeiro número">
-            <input type="number" id="num2" placeholder="Digite o segundo número" aria-label="Segundo número">
-        </div>
-        <div>
-            <button onclick="somar()">Somar</button>
-            <button onclick="limpar()">Limpar</button>
-            <p id="resultado"></p>
-        </div>`;
+                        if (isNaN(resultado)) {
+                            campoResultado.innerText = 'Insira números válidos.';
+                            campoResultado.style.color = 'red';
+                        } else {
+                            campoResultado.innerText = 'Resultado: ' + resultado;
+                            campoResultado.style.color = 'green';
+                        }
+                    }
+                    function limpar() {
+                        document.getElementById('num1').value = '';
+                        document.getElementById('num2').value = '';
+                        document.getElementById('resultado').innerText = '';
+                    }`
+            },
+              {
+                css: `
+				body {
+					font-family: sans-serif;
+					background: #f0f0f0;
+					display: flex;
+					justify-content: center;
+					align-items: center;
+					min-height: 100vh;
+					margin: 0;
+				}
+				.container {
+					background: white;
+					padding: 20px;
+					border-radius: 8px;
+					box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+					text-align: center;
+				}
+				button {
+					background: #007bff;
+					color: white;
+					border: none;
+					padding: 10px 20px;
+					border-radius: 5px;
+					cursor: pointer;
+					margin: 10px;
+					transition: background-color 0.3s;
+				}
+				button:hover {
+					background: #0056b3;
+				}
+				#timer {
+					font-size: 2em;
+					margin-bottom: 20px;
+				}
+				`,
+                html: `<div class="container">
+					<div id="timer">00:00:00</div>
+					<button id="start">Iniciar</button>
+					<button id="pause" disabled>Pausar</button>
+					<button id="reset">Reset</button>
+				</div>`,
+                js: `
+				let timerInterval;
+				let seconds = 0;
+				let isPaused = true;
 
-        const exampleJS = `<script>
-        function somar() {
-            const num1 = parseFloat(document.getElementById('num1').value);
-            const num2 = parseFloat(document.getElementById('num2').value);
-            const resultado = num1 + num2;
-            const campoResultado = document.getElementById('resultado');
+				function updateDisplay() {
+					const display = document.getElementById('timer');
+					const hours = String(Math.floor(seconds / 3600)).padStart(2, '0');
+					const minutes = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+					const secs = String(seconds % 60).padStart(2, '0');
+					display.innerText = \`\${hours}:\${minutes}:\${secs}\`;
+				}
 
-            if (isNaN(resultado)) {
-                campoResultado.innerText = 'Insira números válidos.';
-                campoResultado.style.color = 'red';
-            } else {
-                campoResultado.innerText = 'Resultado: ' + resultado;
-                campoResultado.style.color = 'green';
+				function startTimer() {
+					if (isPaused) {
+						isPaused = false;
+						document.getElementById('start').disabled = true;
+						document.getElementById('pause').disabled = false;
+						timerInterval = setInterval(() => {
+							seconds++;
+							updateDisplay();
+						}, 1000);
+					}
+				}
+
+				function pauseTimer() {
+					if (!isPaused) {
+						isPaused = true;
+						document.getElementById('start').disabled = false;
+						document.getElementById('pause').disabled = true;
+						clearInterval(timerInterval);
+					}
+				}
+				function resetTimer() {
+					isPaused = true;
+					document.getElementById('start').disabled = false;
+					document.getElementById('pause').disabled = true;
+					clearInterval(timerInterval);
+					seconds = 0;
+					updateDisplay();
+				}
+				document.getElementById('start').addEventListener('click', startTimer);
+				document.getElementById('pause').addEventListener('click', pauseTimer);
+				document.getElementById('reset').addEventListener('click', resetTimer);
+				`
+            },
+			{
+                css: `
+				body {
+					font-family: sans-serif;
+					display: flex;
+					justify-content: center;
+					align-items: center;
+					min-height: 100vh;
+					background-color: #f4f4f4;
+					margin: 0;
+				}
+
+				.card {
+					background-color: #fff;
+					border-radius: 8px;
+					box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+					padding: 20px;
+					width: 300px;
+					text-align: center;
+				}
+
+				img {
+					max-width: 100%;
+					height: auto;
+					border-radius: 50%;
+					margin-bottom: 15px;
+					border: 2px solid #3498db;
+				}
+				h2 {
+					color: #333;
+					margin-bottom: 10px;
+				}
+
+				p {
+					color: #555;
+					margin-bottom: 15px;
+				}
+                button {
+                    background-color: #3498db;
+                    color: white;
+                    border: none;
+                    padding: 10px 15px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    transition: background-color 0.3s;
+					margin: 5px;
+                }
+                button:hover {
+                    background-color: #2980b9;
+                }
+				.buttons {
+					margin-top: 10px;
+					display: flex;
+					justify-content: center;
+				}
+				`,
+                html: `<div class="card">
+					<img src="https://placekitten.com/200/200" alt="Profile Picture" id="profilePic">
+					<h2 id="profileName">Nome do Perfil</h2>
+					<p id="profileBio">Breve descrição do perfil.</p>
+					<div class="buttons">
+						<button onclick="updateProfile('gato', 'Gatinho', 'Miau!')">Gato</button>
+						<button onclick="updateProfile('cachorro', 'Cachorro', 'Au Au!')">Cachorro</button>
+					</div>
+				</div>`,
+                js: `function updateProfile(tipo, nome, bio) {
+                    const profilePic = document.getElementById('profilePic');
+					const profileName = document.getElementById('profileName');
+					const profileBio = document.getElementById('profileBio');
+                    if (tipo === 'gato') {
+                        profilePic.src = 'https://placekitten.com/200/200';
+                    } else {
+                        profilePic.src = 'https://placedog.net/200/200';
+                    }
+					profileName.innerText = nome;
+					profileBio.innerText = bio;
+				}`
             }
-        }
 
-        function limpar() {
-            document.getElementById('num1').value = '';
-            document.getElementById('num2').value = '';
-            document.getElementById('resultado').innerText = '';
-        }
-<\/script>
-</body>
-</html>
-`;
+        ];
+
         let htmlEditor, cssEditor, jsEditor;
+        let allCssEditor, allHtmlEditor, allJsEditor;
+
 
         function initCodeMirror() {
             htmlEditor = CodeMirror.fromTextArea(document.getElementById('html-code'), {
@@ -295,7 +684,7 @@
                 theme: "monokai",
                 matchBrackets: true,
                 styleActiveLine: true,
-                lineWrapping: true // Adiciona quebra de linha automática
+                lineWrapping: true
             });
             cssEditor = CodeMirror.fromTextArea(document.getElementById('css-code'), {
                 lineNumbers: true,
@@ -303,7 +692,7 @@
                 theme: "monokai",
                 matchBrackets: true,
                 styleActiveLine: true,
-                lineWrapping: true // Adiciona quebra de linha automática
+                lineWrapping: true
             });
             jsEditor = CodeMirror.fromTextArea(document.getElementById('js-code'), {
                 lineNumbers: true,
@@ -311,70 +700,117 @@
                 theme: "monokai",
                 matchBrackets: true,
                 styleActiveLine: true,
-                lineWrapping: true // Adiciona quebra de linha automática
+                lineWrapping: true
             });
-        }
-            initCodeMirror();
-            reloadExample();
 
-        function reloadExample() {
-            cssEditor.setValue(exampleCSS);
-            htmlEditor.setValue(exampleHTML);
-            jsEditor.setValue(exampleJS);
-            updatePreview();
+              allCssEditor = CodeMirror.fromTextArea(document.getElementById('all-css-code'), {
+                    mode: 'css',
+                    theme: 'monokai',
+                    lineNumbers: true,
+                    matchBrackets: true,
+                    styleActiveLine: true,
+                    lineWrapping: true
+                });
+
+                 allHtmlEditor = CodeMirror.fromTextArea(document.getElementById('all-html-code'), {
+                    mode: 'xml',
+                    theme: 'monokai',
+                    lineNumbers: true,
+                    matchBrackets: true,
+                    styleActiveLine: true,
+                    lineWrapping: true
+                });
+
+                 allJsEditor = CodeMirror.fromTextArea(document.getElementById('all-js-code'), {
+                    mode: 'javascript',
+                   theme: 'monokai',
+                    lineNumbers: true,
+                    matchBrackets: true,
+                    styleActiveLine: true,
+                    lineWrapping: true
+                });
+             const allCodeEditor = document.getElementById('all-code-editor')
+             allCodeEditor.classList.add('hidden')
         }
+
+        function loadExample(index) {
+            if (examples[index]) {
+                cssEditor.setValue(examples[index].css);
+                htmlEditor.setValue(examples[index].html);
+                jsEditor.setValue(examples[index].js);
+                 updatePreview();
+            }
+        }
+        function loadHTMLHint() {
+            const htmlHintScript = document.createElement('script');
+            htmlHintScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/htmlhint/1.1.3/htmlhint.min.js';
+            htmlHintScript.onload = function() {
+                 document.head.appendChild(htmlHintScript);
+             }
+         }
 
         function updatePreview() {
             const cssCode = cssEditor.getValue();
             const htmlCode = htmlEditor.getValue();
             const jsCode = jsEditor.getValue();
 
-            const previewFrame = document.getElementById('previewFrame');
-            const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+            // Localize e recrie o iframe
+            const previewContainer = document.getElementById('preview');
+            const oldFrame = document.getElementById('previewFrame');
+            const newFrame = document.createElement('iframe');
 
+            newFrame.id = 'previewFrame';
+            newFrame.sandbox = 'allow-scripts allow-same-origin';
+            newFrame.style.width = '100%';
+            newFrame.style.height = '100%';
+            newFrame.style.border = 'none';
+
+            previewContainer.replaceChild(newFrame, oldFrame);
+
+            const doc = newFrame.contentDocument || newFrame.contentWindow.document;
             doc.open();
-            doc.write(`${cssCode}
-                        ${htmlCode}
-                        ${jsCode}
-        `);
+            doc.write(`
+                ${htmlCode}
+                <style>${cssCode}</style>
+                <script>${jsCode}<\/script>
+            `);
             doc.close();
         }
+
+
         function expandEditor(type) {
             const editor = document.getElementById(`${type}-editor`);
             if (editor.classList.contains('expanded')) {
                 editor.classList.remove('expanded');
             } else {
                 document.querySelectorAll('.editor').forEach(el => el.classList.remove('expanded'));
-                editor.classList.add('expanded');
-                // Ensure CodeMirror instances are refreshed
+                    editor.classList.add('expanded');
+                setTimeout(() => {
                 if (type === 'js') jsEditor.refresh();
                 else if (type === 'css') cssEditor.refresh();
                 else if (type === 'html') htmlEditor.refresh();
+            }, 300)
             }
         }
-        let aiWindow = null;
+         let aiWindow = null;
 
         function loadAI(url) {
             if (url) {
                 const screenWidth = screen.availWidth;
                 const screenHeight = screen.availHeight;
 
-                // 3/4 para o editor, 1/4 para a IA
                 const editorWidth = screenWidth * (3 / 4);
                 const aiWidth = screenWidth * (1 / 4);
 
-                // Redimensionar janela do editor
                 window.resizeTo(editorWidth, screenHeight);
 
-                // Evitar comportamento de maximização automática
                 setTimeout(() => {
-                    // Abrir a IA em uma nova janela
                     aiWindow = window.open(url, "AIWindow", `width=${aiWidth},height=${screenHeight},left=${editorWidth},top=0`);
 
                     if (!aiWindow) {
                         alert("Popup blocked! Allow popups for this site.");
                     }
-                }, 500); // Atraso para evitar que o navegador restaure o tamanho original
+                }, 500);
             }
         }
 
@@ -385,128 +821,190 @@
 
             const newWindow = window.open();
             newWindow.document.write(`
-                    ${cssCode}
-                    ${htmlCode}
-                    ${jsCode}
-                `);
+                <style>${cssCode}</style>
+                ${htmlCode}
+                <script>${jsCode}<\/script>
+            `);
         }
 
-        // Listen for errors from the iframe
-        window.addEventListener('message', function (event) {
-            if (event.data.type === 'error') {
-                document.getElementById('error-display').style.display = 'block';
-                document.getElementById('error-display').innerHTML = '<h2>Error:</h2>' + event.data.message;
-            } else {
-                document.getElementById('error-display').style.display = 'none';
-                document.getElementById('error-display').innerHTML = ''; // Clear old errors
-            }
-        });
-
-
-        // ... (previous JavaScript code remains unchanged)
-
-        // New function for expanding all code
         function expandAllCode() {
-            const allCodeDiv = document.createElement('div');
-            allCodeDiv.className = 'all-code-editor';
-            document.body.appendChild(allCodeDiv);
 
-            // Combine all code from editors without HTML tags
-            const combinedCode = '/* CSS */\n' + cssEditor.getValue() + '\n\n' +
-                '/* HTML */\n' + htmlEditor.getValue() + '\n\n' +
-                '/* JavaScript */\n' + jsEditor.getValue();
+            const allCodeEditor = document.getElementById('all-code-editor')
+             const mainCssEditor =  cssEditor;
+             const mainHtmlEditor = htmlEditor;
+             const mainJsEditor =  jsEditor;
 
-            // Create a new CodeMirror instance for the combined code
-            const allCodeEditor = CodeMirror(allCodeDiv, {
-                value: combinedCode,
-                mode: "htmlmixed",
-                theme: "monokai",
-                lineNumbers: true,
-                matchBrackets: true,
-                styleActiveLine: true,
-                lineWrapping: true,
-                /* readOnly: true // Prevent editing since this is just for viewing */
-            });
-
-            // Close function
-            const closeButton = document.createElement('button');
-            closeButton.textContent = 'Fechar';
-            closeButton.style.position = 'absolute';
-            closeButton.style.top = '10px';
-            closeButton.style.right = '10px';
-            closeButton.onclick = function () {
-                document.body.removeChild(allCodeDiv);
-            };
-            allCodeDiv.appendChild(closeButton);
+            if (allCodeEditor.classList.contains('hidden')) {
+                allCssEditor.setValue(mainCssEditor.getValue());
+                allHtmlEditor.setValue(mainHtmlEditor.getValue());
+                allJsEditor.setValue(mainJsEditor.getValue());
+               allCodeEditor.classList.remove('hidden')
+                allCssEditor.refresh();
+                allHtmlEditor.refresh();
+                allJsEditor.refresh();
+                syncCode(allCssEditor, mainCssEditor)
+                syncCode(allHtmlEditor, mainHtmlEditor)
+                syncCode(allJsEditor, mainJsEditor)
+             }
+           else {
+                allCodeEditor.classList.add('hidden')
+             }
         }
 
-       let courseWindow = null;
+        function adjustFontSize(editorId, direction) {
+          const editorElement = document.getElementById(editorId);
+           const codeMirrorElement = editorElement.querySelector('.CodeMirror');
+           if (codeMirrorElement) {
+               const currentSize = parseInt(window.getComputedStyle(codeMirrorElement).fontSize);
+             const newSize = currentSize + (direction * 2);
+            if(newSize > 8)
+                codeMirrorElement.style.fontSize = `${newSize}px`;
+            }
+        }
+
+         function syncCode(editorFrom, editorTo){
+             editorFrom.on('change', function() {
+                  editorTo.setValue(editorFrom.getValue());
+                  updatePreview()
+             });
+         }
+		let courseWindow = null;
 
         function loadCourse(url) {
             if (url) {
                 const screenWidth = screen.availWidth;
                 const screenHeight = screen.availHeight;
 
-                // 3/4 para o editor, 1/4 para o Curso
                 const editorWidth = screenWidth * (3 / 4);
                 const aiWidth = screenWidth * (1 / 4);
 
-                // Redimensionar janela do editor
                 window.resizeTo(editorWidth, screenHeight);
 
-                // Evitar comportamento de maximização automática
                 setTimeout(() => {
-                    // Abrir a IA em uma nova janela
-                    aiWindow = window.open(url, "AIWindow", `width=${aiWidth},height=${screenHeight},left=${editorWidth},top=0`);
+                    courseWindow = window.open(url, "CourseWindow", `width=${aiWidth},height=${screenHeight},left=${editorWidth},top=0`);
 
-                    if (!aiWindow) {
+                    if (!courseWindow) {
                         alert("Popup blocked! Allow popups for this site.");
                     }
-                }, 500); // Atraso para evitar que o navegador restaure o tamanho original
+                }, 500);
             }
         }
 
-        // Add EventListener to update the all code view when any editor changes
-        document.addEventListener('DOMContentLoaded', function () {
+		 function saveCode() {
+            const code = {
+                css: cssEditor.getValue(),
+                html: htmlEditor.getValue(),
+                js: jsEditor.getValue()
+            };
+            localStorage.setItem('savedCode', JSON.stringify(code));
+            alert('Código salvo!');
+        }
 
-            reloadExample();
-
-            // Listen for changes in any editor to update the preview and potentially the all-code view
-            htmlEditor.on('change', function () {
-                document.getElementById('error-display').style.display = 'none';
-                document.getElementById('error-display').innerHTML = ''; // Clear old errors before update
+        function loadCode() {
+            const savedCode = localStorage.getItem('savedCode');
+            if (savedCode) {
+                const code = JSON.parse(savedCode);
+                cssEditor.setValue(code.css);
+                htmlEditor.setValue(code.html);
+                jsEditor.setValue(code.js);
                 updatePreview();
-                // Check if the all-code view is open (you might need to keep track of this)
-                // If open, update it:
-                if (document.querySelector('.all-code-editor')) {
-                    expandAllCode();
-                }
-            });
-            cssEditor.on('change', function () {
-                updatePreview();
-                if (document.querySelector('.all-code-editor')) {
-                    expandAllCode();
-                }
-            });
-            jsEditor.on('change', function () {
-                updatePreview();
-                if (document.querySelector('.all-code-editor')) {
-                    expandAllCode();
-                }
-            });
-        });
-
-        // Existing error handling for iframe messages
-        window.addEventListener('message', function (event) {
-            if (event.data.type === 'error') {
-                document.getElementById('error-display').style.display = 'block';
-                document.getElementById('error-display').innerHTML = '<h2>Error:</h2>' + event.data.message;
+                alert('Código carregado!');
             } else {
-                document.getElementById('error-display').style.display = 'none';
-                document.getElementById('error-display').innerHTML = ''; // Clear old errors
+                alert('Nenhum código salvo encontrado.');
             }
-        });
+        }
 
+		function exportCode() {
+			 const code = {
+                css: cssEditor.getValue(),
+                html: htmlEditor.getValue(),
+                js: jsEditor.getValue()
+            };
+			 const codeString = JSON.stringify(code, null, 2);
+            const blob = new Blob([codeString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+            a.href = url;
+            a.download = 'meu_codigo.json';
+			document.body.appendChild(a);
+            a.click();
+			document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+         function getCodeSnippet(code, lineNumber) {
+            const lines = code.split('\n');
+            const start = Math.max(0, lineNumber - 2);
+            const end = Math.min(lines.length, lineNumber + 1);
+            let snippet = '';
+            for(let i = start; i < end; i++){
+                let line = lines[i];
+                if(i === lineNumber -1){
+                    snippet += `<span style="background-color: #f0a0a0;">${i+1}: ${line}</span> \n`;
+                }else {
+                    snippet += `${i+1}: ${line} \n`;
+                }
+            }
+                return snippet;
+        }
+
+       function validateCode() {
+           const htmlCode = htmlEditor.getValue();
+            const jsCode = jsEditor.getValue();
+            let errorMessages = [];
+
+            // Validate HTML
+             if(typeof HTMLHint !== 'undefined'){
+                 const htmlHintResults = HTMLHint.verify(htmlCode);
+                 htmlHintResults.forEach(error => {
+                     errorMessages.push(`<p><b>HTML:</b> Line ${error.line}, Col ${error.col}: ${error.message} (Rule: ${error.rule.id})</p>
+                     <pre style="background-color: #f8f8f8; padding: 10px; white-space: pre-wrap;"><code>${getCodeSnippet(htmlCode, error.line)}</code></pre>`);
+                 });
+             }
+
+          try {
+            // Validate JavaScript using JSHint
+                const jshintResults = JSHINT(jsCode);
+                if (jshintResults) {
+                  JSHINT.errors.forEach(error => {
+                    if (error) {
+                        errorMessages.push(`<p><b>JS:</b> Line ${error.line}, Col ${error.character}: ${error.reason}</p>
+                        <pre style="background-color: #f8f8f8; padding: 10px; white-space: pre-wrap;"><code>${getCodeSnippet(jsCode, error.line)}</code></pre>`);
+                    }
+                  });
+                }
+            } catch (e) {
+              errorMessages.push(`Erro ao validar JS: ${e.message}`);
+           }
+
+          const errorDisplay = document.getElementById('error-display');
+           if (errorMessages.length > 0) {
+               errorDisplay.style.display = 'block';
+               errorDisplay.innerHTML = '<h2>Erros encontrados:</h2><p>' + errorMessages.join('</p><p>') + '</p>';
+           } else {
+              errorDisplay.style.display = 'none';
+               errorDisplay.innerHTML = '';
+           }
+       }
+
+	    document.addEventListener('DOMContentLoaded',   function () {
+            initCodeMirror();
+            loadHTMLHint();
+            loadExample(0);
+
+            htmlEditor.on('change', function() {
+                 updatePreview();
+                  validateCode();
+            });
+             cssEditor.on('change', function() {
+                updatePreview();
+                 validateCode();
+            });
+             jsEditor.on('change', function() {
+                 updatePreview();
+                  validateCode();
+            });
+        });
     </script>
 </body>
 </html>
